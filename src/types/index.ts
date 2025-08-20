@@ -12,12 +12,12 @@ export type ReactChildren = React.ReactNode;
 
 export type ToastPosition = 'top' | 'bottom';
 
-export type ToastOptions = {
+export type ToastOptions<T extends ToastType = ToastType> = {
   /**
    * Toast type.
    * Default value: `success`
    */
-  type?: ToastType;
+  type?: T;
   /**
    * Style for the header text in the Toast (text1).
    */
@@ -84,20 +84,28 @@ export type ToastOptions = {
    * Called on Toast press
    */
   onPress?: () => void;
-  /**
-   * Any custom props passed to the specified Toast type.
-   * Has effect only when there is a custom Toast type (configured via the `config` prop
-   * on the Toast instance) that uses the `props` parameter
-   */
-  props?: any;
-};
+} & (keyof CustomToastParamTypes extends never
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    ? {
+        props?: any,
+    }
+    : {
+          /**
+           * Any custom props passed to the specified Toast type.
+           * Has effect only when there is a custom Toast type (configured via the `config` prop
+           * on the Toast instance) that uses the `props` parameter
+           */
+          props: ToastParamsTypes[T];
+      });
 
 export type ToastData = {
   text1?: string;
   text2?: string;
 };
 
-export type ToastShowParams = ToastData & ToastOptions;
+export type ToastShow = <T extends ToastType = ToastType>(params: ToastShowParams<T>) => void;
+
+export type ToastShowParams<T extends ToastType = ToastType> = ToastData & ToastOptions<T>;
 
 export type ToastHideParams = void;
 
@@ -141,7 +149,7 @@ export type ToastConfigParams<Props> = {
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CustomToastParamTypes {}
 
-interface ToastParamsTypes extends CustomToastParamTypes {
+export interface ToastParamsTypes extends CustomToastParamTypes {
   success?: never;
   error?: never;
   info?: never;
@@ -153,10 +161,12 @@ export type ToastConfig = {
   [key in keyof ToastParamsTypes]: (
     params: ToastConfigParams<ToastParamsTypes[key]>
   ) => React.ReactNode;
-};
+} & Record<string, (
+    params: ToastConfigParams<any>
+  ) => React.ReactNode>
 
 export type ToastRef = {
-  show: (params: ToastShowParams) => void;
+  show: ToastShow;
   hide: (params: ToastHideParams) => void;
 };
 
