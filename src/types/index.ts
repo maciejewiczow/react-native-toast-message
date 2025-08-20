@@ -10,7 +10,6 @@ import {
 
 export type ReactChildren = React.ReactNode;
 
-export type ToastType = 'success' | 'error' | 'info' | (string & {});
 export type ToastPosition = 'top' | 'bottom';
 
 export type ToastOptions = {
@@ -135,8 +134,25 @@ export type ToastConfigParams<Props> = {
   props: Props;
 };
 
+/**
+ * This interface is here to allow for types customization via declaration merging when using custom toast types.
+ * See [the docs](https://github.com/calintamas/react-native-toast-message/blob/main/docs/custom-layouts.md) for usage examples.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface CustomToastParamTypes {}
+
+interface ToastParamsTypes extends CustomToastParamTypes {
+  success?: never;
+  error?: never;
+  info?: never;
+}
+
+export type ToastType = keyof ToastParamsTypes;
+
 export type ToastConfig = {
-  [key: string]: (params: ToastConfigParams<any>) => React.ReactNode;
+  [key in keyof ToastParamsTypes]: (
+    params: ToastConfigParams<ToastParamsTypes[key]>
+  ) => React.ReactNode;
 };
 
 export type ToastRef = {
@@ -148,11 +164,19 @@ export type ToastRef = {
  * `props` that can be set on the Toast instance.
  * They act as defaults for all Toasts that are shown.
  */
-export type ToastProps = {
-  /**
-   * Layout configuration for custom Toast types
-   */
-  config?: ToastConfig;
+export type ToastProps = (keyof CustomToastParamTypes extends never
+  ? {
+      /**
+       * Layout configuration for custom Toast types
+       */
+      config?: ToastConfig;
+    }
+  : {
+      /**
+       * Layout configuration for custom Toast types
+       */
+      config: ToastConfig;
+    }) & {
   /**
    * Toast type.
    * Default value: `success`
