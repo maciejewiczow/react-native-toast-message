@@ -85,27 +85,40 @@ export type ToastOptions<T extends ToastType = ToastType> = {
    */
   onPress?: () => void;
 } & (keyof CustomToastParamTypes extends never
-    // eslint-disable-next-line @typescript-eslint/ban-types
+  ? { props?: any }
+  : T extends keyof CustomToastParamTypes
+  ? Required<CustomToastParamTypes>[T] extends never
+    ? { props?: any }
+    : undefined extends CustomToastParamTypes[T]
     ? {
-        props?: any,
-    }
+        /**
+         * Any custom props passed to the specified Toast type.
+         * Has effect only when there is a custom Toast type (configured via the `config` prop
+         * on the Toast instance) that uses the `props` parameter
+         */
+        props?: CustomToastParamTypes[T];
+      }
     : {
-          /**
-           * Any custom props passed to the specified Toast type.
-           * Has effect only when there is a custom Toast type (configured via the `config` prop
-           * on the Toast instance) that uses the `props` parameter
-           */
-          props: ToastParamsTypes[T];
-      });
+        /**
+         * Any custom props passed to the specified Toast type.
+         * Has effect only when there is a custom Toast type (configured via the `config` prop
+         * on the Toast instance) that uses the `props` parameter
+         */
+        props: CustomToastParamTypes[T];
+      }
+  : { props?: any });
 
 export type ToastData = {
   text1?: string;
   text2?: string;
 };
 
-export type ToastShow = <T extends ToastType = ToastType>(params: ToastShowParams<T>) => void;
+export type ToastShow = <T extends ToastType = ToastType>(
+  params: ToastShowParams<T>
+) => void;
 
-export type ToastShowParams<T extends ToastType = ToastType> = ToastData & ToastOptions<T>;
+export type ToastShowParams<T extends ToastType = ToastType> = ToastData &
+  ToastOptions<T>;
 
 export type ToastHideParams = void;
 
@@ -149,21 +162,23 @@ export type ToastConfigParams<Props> = {
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CustomToastParamTypes {}
 
-export interface ToastParamsTypes extends CustomToastParamTypes {
+export interface BuiltinToastParamsTypes {
   success?: never;
   error?: never;
   info?: never;
 }
 
-export type ToastType = keyof ToastParamsTypes;
+export type ToastType = keyof (BuiltinToastParamsTypes & CustomToastParamTypes);
 
 export type ToastConfig = {
-  [key in keyof ToastParamsTypes]: (
-    params: ToastConfigParams<ToastParamsTypes[key]>
+  [key in keyof BuiltinToastParamsTypes]?: (
+    params: ToastConfigParams<BuiltinToastParamsTypes[key]>
   ) => React.ReactNode;
-} & Record<string, (
-    params: ToastConfigParams<any>
-  ) => React.ReactNode>
+} & {
+  [key in keyof CustomToastParamTypes]-?: (
+    params: ToastConfigParams<CustomToastParamTypes[key]>
+  ) => React.ReactNode;
+} & Record<string, (params: ToastConfigParams<any>) => React.ReactNode>;
 
 export type ToastRef = {
   show: ToastShow;
